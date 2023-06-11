@@ -1,3 +1,3 @@
-# Assignment-7-SPA
+# pos-system-js
 Single Page Application
-link:-https://oshada1999.github.io/Assignment-7-SPA/
+link:-https://oshada1999.github.io/pos-system-js/
