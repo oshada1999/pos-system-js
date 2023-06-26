@@ -1,6 +1,8 @@
 import {Order} from "../models/Order.js";
 import {Order_Item} from "../models/Order_Item.js";
 import {getAllDB, saveOrderDB} from "../db/DB.js";
+import {handleRefreshAll} from "./DashBoardController.js";
+import {handleRefreshTable} from "./RecentOrderDetailsController.js";
 
 var order_item_arr = [];
 var cus;
@@ -17,16 +19,15 @@ export class OrderController {
         $('#itemCodeCmb').on('change', (event) => {
             this.handleItemDetails(event.target.value);
         });
-        $('#addBtn').on('click', () => {
+        $('#orderAddBtn').on('click', () => {
             this.handleValidation();
         });
         $('#placeOrderBtn').on('click', () => {
             this.handleSaveOrder();
         });
-        $('#deleteBtn').on('click', () => {
+        $('#orderDeleteBtn').on('click', () => {
             this.handleDeleteItem();
         });
-
         this.handleTableClickEvent();
         this.handDateTime();
         this.handleOrderID();
@@ -64,7 +65,7 @@ export class OrderController {
             $('#customerCmb').append("<option>" + value._id + "</option>");
         });
 
-        document.getElementById('deleteBtn').style.display = "none";
+        document.getElementById('orderDeleteBtn').style.display = "none";
     }
 
     handleCustomerDetails(id) {
@@ -72,7 +73,7 @@ export class OrderController {
         getAllDB("DATA").map((value) => {
             if (value._id === id) {
                 cus = value;
-                $('#customer_name').text(value._name);
+                $('#customer_name').text(value._id);
                 $('#customer_address').text(value._address);
                 $('#customer_contact').text(value._contact);
 
@@ -87,9 +88,9 @@ export class OrderController {
         getAllDB("ITEM").map((value) => {
             if (value._itemCode === itemCode) {
                 itm = value;
-                $('#des2').text(value._description);
+                $('#des').text(value._description);
                 $('#unit_price').text(value._unitPrice);
-                $('#qty_on_hand2').text(value._qtyOnHand);
+                $('#qty_on_hand').text(value._qtyOnHand);
 
                 $('#itemCodeCmb').css({borderBottom: "1px solid #ced4da"});
                 itm = value;
@@ -102,15 +103,15 @@ export class OrderController {
         $('#customerCmb :selected').text() === "Choose..." ? (alert("Please select the customer details !"), $('#customerCmb').focus(), $('#customerCmb').css({borderBottom: "2px solid red"})) :
             $('#itemCodeCmb :selected').text() === "Choose..." ? (alert("Please select the item details !"), $('#itemCodeCmb').focus(), $('#itemCodeCmb').css({borderBottom: "2px solid red"})) :
                 !/\d+$/.test($('#qty').val()) ? (alert("Qty invalid or empty !"), $('#qty').focus(), $('#qty').css({borderBottom: "2px solid red"})) :
-                    $('#qty').val() > $('#qty_on_hand2').text() ? (alert("Noo much qty left !"), $('#qty').focus(), $('#qty').css({borderBottom: "2px solid red"})) :
-                        $('#addBtn').text() === 'Add' ?  this.handleAddItem() : this.handleUpdateItem();
+                    parseInt($('#qty').val()) > parseInt($('#qty_on_hand').text()) ? (alert("Noo much qty left www !"), $('#qty').focus(), $('#qty').css({borderBottom: "2px solid red"})) :
+                        $('#orderAddBtn').text() === 'Add' ?  this.handleAddItem() : this.handleUpdateItem();
     }
 
     handleUpdateItem() {
 
         let index = order_item_arr.findIndex(value => value._item._itemCode === selectedItemCode);
 
-        if ( parseInt($('#qty').val()) > parseInt($('#qty_on_hand2').text())) {
+        if ( parseInt($('#qty').val()) > parseInt($('#qty_on_hand').text())) {
 
             alert("Noo much qty left !");
             $('#qty').focus();
@@ -120,24 +121,21 @@ export class OrderController {
 
         order_item_arr[index] = new Order_Item(itm, $('#qty').val(), $('#qty').val() * $('#unit_price').text());
 
-        $('#addBtn').text('Add'), $('#addBtn').css({background: '#0d6efd', border: '#0d6efd'});
+        $('#orderAddBtn').text('Add'), $('#addBtn').css({background: '#0d6efd', border: '#0d6efd'});
 
         this.handleLoadTable();
         this.handleClearFunction();
-
     }
 
     handleAddItem(){
-        console.log("dwdad")
 
         let index = this.handleIsExists();
 
         if (index === -1) {
 
-            console.log("dwdad11111111")
             order_item_arr.push(new Order_Item(itm, $('#qty').val(), $('#qty').val() * $('#unit_price').text()));
 
-        } else if ((parseInt(order_item_arr[index]._qty) + parseInt($('#qty').val())) > parseInt($('#qty_on_hand2').text())) {
+        } else if ((parseInt(order_item_arr[index]._qty) + parseInt($('#qty').val())) > parseInt($('#qty_on_hand').text())) {
 
             alert("Noo much qty left !");
             $('#qty').focus();
@@ -150,7 +148,6 @@ export class OrderController {
             order_item_arr[index]._total = parseInt(order_item_arr[index]._qty) * parseInt($('#unit_price').text());
         }
 
-
         document.getElementById('customerCmb').disabled = true;
         this.handleLoadTable();
         this.handleClearFunction();
@@ -159,11 +156,11 @@ export class OrderController {
     handleClearFunction(){
 
         document.getElementById("itemCodeCmb").selectedIndex = 0;
-        document.getElementById('deleteBtn').style.display = "none";
-        $('#addBtn').text('Add');
-        $('#addBtn').css({background: '#0d6efd', border: '#0d6efd'});
+        document.getElementById('orderDeleteBtn').style.display = "none";
+        $('#orderAddBtn').text('Add');
+        $('#orderAddBtn').css({background: '#0d6efd', border: '#0d6efd'});
         $('#des').text('.');
-        $('#qty_on_hand2').text(".");
+        $('#qty_on_hand').text(".");
         $('#unit_price').text(".");
         $('#qty').val("");
 
@@ -211,11 +208,13 @@ export class OrderController {
 
         this.handleLoadTable();
         this.handleOrderID();
+        handleRefreshAll();
+        handleRefreshTable();
     }
 
     handleLoadTable() {
 
-        $('#ordertbl tbody tr').remove();
+        $('#orderTbl tbody tr').remove();
 
         order_item_arr.map((value) => {
             var row = "<tr>" +
@@ -227,14 +226,14 @@ export class OrderController {
                 "<td>" + value._total + "</td>" +
                 "</tr>";
 
-            $('#ordertbl tbody').append(row);
+            $('#orderTbl tbody').append(row);
 
         });
     }
 
     handleTableClickEvent() {
 
-        $('#ordertbl tbody').on('click', 'tr', (event) => {
+        $('#orderTbl tbody').on('click', 'tr', (event) => {
 
             var arr = document.getElementById('itemCodeCmb');
             for (var i = 0; i < arr.length; i++){
@@ -244,17 +243,17 @@ export class OrderController {
             }
             selectedItemCode = $(event.target).closest('tr').find('td').eq(0).text();
             $('#des').text($(event.target).closest('tr').find('td').eq(1).text());
-            $('#qty_on_hand2').text($(event.target).closest('tr').find('td').eq(2).text());
+            $('#qty_on_hand').text($(event.target).closest('tr').find('td').eq(2).text());
             $('#unit_price').text($(event.target).closest('tr').find('td').eq(3).text());
             $('#qty').val($(event.target).closest('tr').find('td').eq(4).text());
 
             index = order_item_arr.findIndex(value => value._item._itemCode === $("#itemCodeCmb :selected").text());
 
-            $('#addBtn').text('Update');
-            $('#addBtn').css({
+            $('#orderAddBtn').text('Update');
+            $('#orderAddBtn').css({
                 background: '#5f27cd', border: '#5f27cd'
             });
-            document.getElementById('deleteBtn').style.display = "inline-block";
+            document.getElementById('orderDeleteBtn').style.display = "inline-block";
         });
     }
 

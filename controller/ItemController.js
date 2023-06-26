@@ -3,23 +3,30 @@ import {getAllDB, saveItemDB, updateItemDB, deleteItemDB} from "../db/DB.js";
 
 export class ItemController{
     constructor() {
-        $('#saveBtn2').on('click', () => {
+        $('#itmSaveBtn').on('click', () => {
             this.handleValidation("Save");
         });
-        $('#updateBtn2').on('click', () => {
+        $('#itmUpdateBtn').on('click', () => {
             this.handleValidation("Update");
         });
-        $('#deleteBtn2').on('click', () => {
+        $('#itmDeleteBtn').on('click', () => {
             this.handleValidation("Delete");
         });
-        this.handleLoadItem();
+        $('#itmSearchBtn').on('click', () => {
+            this.handleSearchItem();
+        });
+        $('#itmSearch').on('keyup', () => {
+            this.handleSearchItem();
+        });
+        this.handleLReloadItemDetails();
+        this.handleLoadItem(getAllDB("ITEM"));
         this.handleTableClickEvent();
     }
 
     handleValidation(Function) {
 
-        !/^(R)([0-9]{2,})$/.test($('#itemCode').val()) ? alert("Invalid Item code") : !$('#des').val() ? alert("Description is empty !") :
-            !/\d+$/.test($('#unitPrice').val()) ? alert("Invalid unit price or empty !") : !/^\d+$/.test($('#qty1').val()) ? alert("Invalid qty or empty !") :
+        !/^(R)([0-9]{2,})$/.test($('#itmCode').val()) ? alert("Invalid Item code") : !$('#itmDes').val() ? alert("Description is empty !") :
+            !/\d+$/.test($('#unitPrice').val()) ? alert("Invalid unit price or empty !") : !/^\d+$/.test($('#itmQty').val()) ? alert("Invalid qty or empty !") :
                 Function === "Save" ? this.handleSaveItem() : Function === "Update" ? this.handleUpdateItem() :
                     this.handleDeleteItem();
     }
@@ -30,30 +37,30 @@ export class ItemController{
             alert("Item code all ready exists !");
             return;
         }
-        saveItemDB(new Item($('#itemCode').val(), $('#des').val(), $('#unitPrice').val(), $('#qty1').val()));
+        saveItemDB(new Item($('#itmCode').val(), $('#itmDes').val(), $('#unitPrice').val(), $('#itmQty').val()));
 
-        this.handleLoadItem();
+        this.handleLoadItem(getAllDB("ITEM"));
     }
 
     handleUpdateItem(){
 
-        updateItemDB(new Item($('#itemCode').val(), $('#des').val(), $('#unitPrice').val(), $('#qty1').val()));
+        updateItemDB(new Item($('#itmCode').val(), $('#itmDes').val(), $('#unitPrice').val(), $('#itmQty').val()));
 
-        this.handleLoadItem();
+        this.handleLoadItem(getAllDB("ITEM"));
     }
 
     handleDeleteItem(){
 
-        deleteItemDB(new Item($('#itemCode').val(), $('#des').val(), $('#unitPrice').val(), $('#qty1').val()));
+        deleteItemDB(new Item($('#itmCode').val(), $('#itmDes').val(), $('#unitPrice').val(), $('#itmQty').val()));
 
-        this.handleLoadItem();
+        this.handleLoadItem(getAllDB("ITEM"));
     }
 
-    handleLoadItem(){
+    handleLoadItem(array){
 
-        $('#itemTBl tbody tr td').remove();
+        $('#itemTbl tbody tr td').remove();
 
-        getAllDB("ITEM").map((value) => {
+        array.map((value) => {
             var row = "<tr>" +
                 "<td>" + value._itemCode + "</td>" +
                 "<td>" + value._description + "</td>" +
@@ -61,20 +68,20 @@ export class ItemController{
                 "<td>" + value._qtyOnHand + "</td>" +
                 "</tr>";
 
-            $('#itemTBl').append(row);
+            $('#itemTbl tbody').append(row);
         });
 
         // disableBtn();
-        document.getElementById('saveBtn').disabled = false;
-        document.getElementById('updateBtn').disabled = true;
-        document.getElementById('deleteBtn').disabled = true;
+        document.getElementById('itmSaveBtn').disabled = false;
+        document.getElementById('itmUpdateBtn').disabled = true;
+        document.getElementById('itmDeleteBtn').disabled = true;
 
         //clearData();
-        $('#itemCode').val("");
-        $('#des').val("");
+        $('#itmCode').val("");
+        $('#itmDes').val("");
         $('#unitPrice').val("");
-        $('#qty1').val("");
-        document.getElementById('itemCode').disabled = false;
+        $('#itmQty').val("");
+        document.getElementById('itmCode').disabled = false;
 
     }
 
@@ -82,7 +89,7 @@ export class ItemController{
 
         let flag = false;
         getAllDB("ITEM").filter((event) => {
-            if (event._itemCode === $('#itemCode').val()) {
+            if (event._itemCode === $('#itmCode').val()) {
                 flag = true;
             }
         });
@@ -91,16 +98,47 @@ export class ItemController{
 
     handleTableClickEvent(){
 
-        $('#itemTBl tbody').on('click', 'tr', (event) => {
-            $('#itemCode').val($(event.target).closest('tr').find('td').eq(0).text())
-            $('#des').val($(event.target).closest('tr').find('td').eq(1).text())
+        $('#itemTbl tbody').on('click', 'tr', (event) => {
+            $('#itmCode').val($(event.target).closest('tr').find('td').eq(0).text())
+            $('#itmDes').val($(event.target).closest('tr').find('td').eq(1).text())
             $('#unitPrice').val($(event.target).closest('tr').find('td').eq(2).text())
-            $('#qty1').val($(event.target).closest('tr').find('td').eq(3).text())
+            $('#itmQty').val($(event.target).closest('tr').find('td').eq(3).text())
 
-            document.getElementById('saveBtn').disabled = true;
-            document.getElementById('itemCode').disabled = true;
-            document.getElementById('updateBtn').disabled = false;
-            document.getElementById('deleteBtn').disabled = false;
+            document.getElementById('itmSaveBtn').disabled = true;
+            document.getElementById('itmCode').disabled = true;
+            document.getElementById('itmUpdateBtn').disabled = false;
+            document.getElementById('itmDeleteBtn').disabled = false;
+        });
+    }
+
+    handleSearchItem(){
+
+        if (!$('#itmSearch').val()){
+            this.handleLoadItem(getAllDB("ITEM"));
+            return;
+        }
+        let array = [];
+        let text = $('#itmSearch').val().toLowerCase();
+
+        getAllDB("ITEM").map(value => {
+
+            value._itemCode.toLowerCase().indexOf(text) !== -1 ? array.push(value) :
+                value._description.toLowerCase().indexOf(text) !== -1 ? array.push(value) :
+                    value._unitPrice.toLowerCase().indexOf(text) !== -1 ? array.push(value) :
+                        value._qtyOnHand.toLowerCase().indexOf(text) !== -1 ? array.push(value) :
+                            undefined;
+        });
+        if (array) this.handleLoadItem(array);
+
+    }
+
+    handleLReloadItemDetails(){
+
+        $(document).on('click', (event) => {
+            if (event.target.className === 'form-control me-2 was-validated search')
+                setTimeout(() => {
+                    if (!$('#itmSearch').val()) this.handleLoadItem(getAllDB("ITEM"));
+                });
         });
     }
 }
